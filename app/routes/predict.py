@@ -2,6 +2,10 @@ from fastapi import APIRouter
 
 from datetime import datetime
 
+from pydantic import EmailStr
+
+from app.services.email_service import enviar_alerta
+
 from app.database import (
     predicciones_collection
 )
@@ -44,6 +48,7 @@ async def predict_file(
 @router.post("/predict-future")
 async def predict_future(
     session_id: str,
+    correo: EmailStr,
     semanas: int = 4
 ):
 
@@ -53,9 +58,18 @@ async def predict_future(
     )
 
     # ======================================
+    # VARIABLES ALERTA
+    # ======================================
+    alertas = []
+
+    # ======================================
     # GUARDAR EN MONGO
     # ======================================
     for item in resultados:
+
+        prediccion = float(
+            item.get("prediccion", 0)
+        )
 
         predicciones_collection.insert_one({
 
@@ -67,17 +81,79 @@ async def predict_future(
             "ano": item.get("ano"),
             "semana": item.get("semana"),
 
-            "prediccion": float(
-                item.get("prediccion", 0)
-            ),
+            "prediccion": prediccion,
 
             "fecha_generacion": datetime.now()
         })
 
+        # ======================================
+        # DETECTAR ALERTAS
+        # ======================================
+        if prediccion > 60:
+
+            alertas.append({
+
+                "provincia": item.get("provincia"),
+                "distrito": item.get("distrito"),
+                "semana": item.get("semana"),
+                "ano": item.get("ano"),
+                "prediccion": round(prediccion, 2)
+
+            })
+
+    # ======================================
+    # ENVIAR UN SOLO CORREO
+    # ======================================
+    if len(alertas) > 0:
+
+        cuerpo = """
+        ALERTA TEMPRANA DE DENGUE
+
+        Se detectaron posibles riesgos altos de dengue:
+
+        """
+
+        for alerta in alertas:
+
+            cuerpo += f"""
+
+            Provincia: {alerta['provincia']}
+            Distrito: {alerta['distrito']}
+            Año: {alerta['ano']}
+            Semana: {alerta['semana']}
+            Casos estimados: {alerta['prediccion']}
+
+            ------------------------
+            """
+
+        enviar_alerta(
+            destinatario=str(correo),
+            asunto="⚠️ Reporte de Riesgo de Dengue",
+            mensaje=cuerpo
+        )
+
+    else:
+
+        cuerpo = f"""
+        REPORTE DE PREDICCIÓN DE DENGUE
+
+        La predicción se ejecutó correctamente.
+
+        Total de predicciones generadas: {len(resultados)}
+
+        No se detectaron zonas con riesgo alto de dengue
+        para el período analizado.
+        """
+
+        enviar_alerta(
+            destinatario=str(correo),
+            asunto="✅ Reporte de Predicción de Dengue",
+            mensaje=cuerpo
+        )
+
     return {
-
         "total_predicciones": len(resultados),
-
+        "total_alertas": len(alertas),
         "predicciones_futuras": resultados
     }
 

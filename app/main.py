@@ -6,7 +6,7 @@ from app.routes.upload import router as upload_router
 from app.routes.predict import router as predict_router
 from app.routes.catalog import router as catalog_router
 from app.routes.dashboard import router as dashboard_router
-from database import predicciones_collection
+from app.database import predicciones_collection
 from datetime import datetime
 
 app = FastAPI()

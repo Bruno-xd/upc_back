@@ -25,17 +25,12 @@ features = joblib.load(
 # ==========================================
 def predecir(df_features):
 
-    # Mantener EXACTAMENTE
-    # las mismas columnas del entrenamiento
     X = df_features[features]
 
-    # Escalar normal
     X_scaled = scaler_X.transform(X)
 
-    # Predicción
     y_pred = model.predict(X_scaled)
 
-    # Invertir escala
     y_pred_scaled = scaler_y.inverse_transform(
         y_pred.reshape(-1,1)
     )
