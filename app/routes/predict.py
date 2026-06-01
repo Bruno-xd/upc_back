@@ -23,6 +23,10 @@ from app.services.storage_service import (
     obtener_excel
 )
 
+from app.services.predictor import (
+    obtener_importancia_variables
+)
+
 router = APIRouter()
 
 # ==========================================
@@ -295,3 +299,13 @@ async def get_districts(
     )
 
     return distritos
+
+# ==========================================
+# IMPORTANCIA DE VARIABLES
+# ==========================================
+@router.get("/feature-importance")
+async def feature_importance():
+
+    return {
+        "importancias": obtener_importancia_variables()
+    }
