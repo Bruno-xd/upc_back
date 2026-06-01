@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 
 load_dotenv()
 
@@ -18,7 +20,8 @@ EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 def enviar_alerta(
     destinatario: str,
     asunto: str,
-    mensaje: str
+    mensaje: str,
+    archivo_adjunto: str = None
 ):
 
     correo = MIMEMultipart()
@@ -35,27 +38,50 @@ def enviar_alerta(
         )
     )
 
+    # =====================================
+    # ADJUNTAR PDF
+    # =====================================
+    if archivo_adjunto and os.path.exists(archivo_adjunto):
+
+        with open(archivo_adjunto, "rb") as archivo:
+
+            parte = MIMEBase(
+                "application",
+                "octet-stream"
+            )
+
+            parte.set_payload(
+                archivo.read()
+            )
+
+        encoders.encode_base64(parte)
+
+        parte.add_header(
+            "Content-Disposition",
+            f'attachment; filename="{os.path.basename(archivo_adjunto)}"'
+        )
+
+        correo.attach(parte)
+
     try:
 
-        servidor = smtplib.SMTP(
+        with smtplib.SMTP(
             SMTP_SERVER,
             SMTP_PORT
-        )
+        ) as servidor:
 
-        servidor.starttls()
+            servidor.starttls()
 
-        servidor.login(
-            EMAIL_SENDER,
-            EMAIL_PASSWORD
-        )
+            servidor.login(
+                EMAIL_SENDER,
+                EMAIL_PASSWORD
+            )
 
-        servidor.sendmail(
-            EMAIL_SENDER,
-            destinatario,
-            correo.as_string()
-        )
-
-        servidor.quit()
+            servidor.sendmail(
+                EMAIL_SENDER,
+                destinatario,
+                correo.as_string()
+            )
 
         print(
             f"Correo enviado a {destinatario}"

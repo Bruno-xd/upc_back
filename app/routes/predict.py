@@ -4,6 +4,8 @@ from datetime import datetime
 
 from pydantic import EmailStr
 
+from app.services.pdf_service import generar_pdf_reporte
+
 from app.services.email_service import enviar_alerta
 
 from app.database import (
@@ -102,6 +104,13 @@ async def predict_future(
             })
 
     # ======================================
+    # GENERAR PDF
+    # ======================================
+    pdf_path = generar_pdf_reporte(
+        resultados=resultados,
+        alertas=alertas
+    )
+    # ======================================
     # ENVIAR UN SOLO CORREO
     # ======================================
     if len(alertas) > 0:
@@ -129,7 +138,8 @@ async def predict_future(
         enviar_alerta(
             destinatario=str(correo),
             asunto="⚠️ Reporte de Riesgo de Dengue",
-            mensaje=cuerpo
+            mensaje=cuerpo,
+            archivo_adjunto=pdf_path
         )
 
     else:
@@ -148,7 +158,8 @@ async def predict_future(
         enviar_alerta(
             destinatario=str(correo),
             asunto="✅ Reporte de Predicción de Dengue",
-            mensaje=cuerpo
+            mensaje=cuerpo,
+            archivo_adjunto=pdf_path
         )
 
     return {
