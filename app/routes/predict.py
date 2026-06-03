@@ -95,7 +95,7 @@ async def predict_future(
         # ======================================
         # DETECTAR ALERTAS
         # ======================================
-        if prediccion > 60:
+        if prediccion > 50:
 
             alertas.append({
 
